@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block title %}Новая оплата{% endblock %}
+{% block content %}
+    <h1>Новая оплата</h1>
+    <form method="POST" class="post-form">{% csrf_token %}
+        <fieldset>
+            <label for="{{ form.title.auto_id }}">{{ form.title.label }}</label>
+            {{ form.title }}
+            <label for="{{ form.value.auto_id }}">{{ form.value.label }}</label>
+            {{ form.value }}
+            <div class="row">
+                <div class="six columns">
+                    <label for="{{ form.payer.auto_id }}">{{ form.payer.label }}</label>
+                    {{ form.payer }}
+                </div>
+                <div class="six columns">
+                    <label for="{{ form.debitors.auto_id }}">{{ form.debitors.label }}</label>
+                    {{ form.debitors }}
+                </div>
+            </div>
+            <br>
+            <button type="submit" class="save btn btn-default">Добавить</button>
+        </fieldset>
+    </form>
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block title %}{{ travel.title }}{% endblock %}
+{% block content %}
+    <h1>
+        <span>{{ travel.title }}</span>
+        <span>{{ travel.start_date }} - {{ travel.end_date }}</span>
+    </h1>
+    <div class="row">
+        <div class="six columns">
+            <h2>Путешественники:</h2>
+            <ul>
+                {% for person in travel.travelers.all %}
+                    <li>{{ person.name }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        <div class="six columns">
+
+            <h2>Список платежей:</h2>
+            <p><a href="{% url 'new_payment' travel.pk %}" class="button">Добавить оплату</a><a
+                    href="{% url 'summaries' travel.pk %}" class="button">Итоги</a></p>
+            <ul>
+                {% for payment in payments_list %}
+                    <li>Оплата {{ payment.title }} - {{ payment.value|floatformat:2 }}. Делится
+                        между {{ payment.debitors }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+    </div>
+{% endblock %}
