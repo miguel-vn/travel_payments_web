@@ -7,11 +7,15 @@
     <link rel="stylesheet" href="{% static 'css/skeleton.css' %}">
 </head>
 <body>
-
 <div class="container">
     <a class="toplinks button" href="{% url 'travels_list' %}">На главную</a>
 
     <a class="toplinks button" href="{% url 'about' %}">О проекте</a>
+    {% if user.is_authenticated %}
+        <a class="toplinks button" href="{% url "social:disconnect" "google-oauth2" %}">Logout</a>
+    {% else %}
+        <a class="toplinks button" href="{% url "social:begin" "google-oauth2" %}">Google+</a>
+    {% endif %}
 
     <div class="row">
         {% block content %}
