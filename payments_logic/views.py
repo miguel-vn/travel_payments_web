@@ -1,6 +1,7 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.models import AnonymousUser
 from django.db import connection
-from django.db.models import Sum
+from django.db.models import Sum, Q, F
 from django.shortcuts import reverse, HttpResponseRedirect, render
 from django.urls import reverse_lazy
 from django.views.generic import CreateView, DetailView, ListView
@@ -11,32 +12,36 @@ from .forms import TravelForm, PersonForm, PaymentForm
 
 def get_summary(data):
     new_data = []
-
+    name_pairs = list()
     for row in data:
 
         deb_name = row['debitor__name']
         payer = row['source__payer__name']
         initial_value = row['total']
-        added = False
+        pair = {deb_name, payer}
 
         for another_row in data:
             if another_row['debitor__name'] == deb_name and another_row['source__payer__name'] == payer:
                 continue
             if another_row['debitor__name'] == payer and another_row['source__payer__name'] == deb_name:
+                if pair in name_pairs:
+                    break
+                name_pairs.append(pair)
                 if another_row['total'] > initial_value:
-                    new_row = {'debitor__name': deb_name,
-                               'source__payer__name': payer,
+                    new_row = {'debitor__name': another_row['debitor__name'],
+                               'source__payer__name': another_row['source__payer__name'],
                                'total': another_row['total'] - initial_value}
                 elif another_row['total'] < initial_value:
                     new_row = {'debitor__name': deb_name,
                                'source__payer__name': payer,
-                               'total': another_row['total'] - initial_value}
+                               'total': initial_value - another_row['total']}
                 else:
                     continue
                 new_data.append(new_row)
-                added = True
+                break
 
-        if not added:
+        if pair not in name_pairs:
+            name_pairs.append(pair)
             new_data.append(row)
 
     new_data = list(filter(lambda elem: elem['total'] > 0, new_data))
@@ -47,9 +52,7 @@ def about_page(request):
     return render(request, 'about.html')
 
 
-class TravelsList(LoginRequiredMixin, ListView):
-    login_url = reverse_lazy('social:begin', args=('google-oauth2',))
-
+class TravelsList(ListView):  # LoginRequiredMixin, ListView):
     model = Travel
     paginate_by = 10
     template_name = 'travels_list.html'
@@ -57,6 +60,9 @@ class TravelsList(LoginRequiredMixin, ListView):
     ordering = ['-start_date', '-end_date']
 
     def get_queryset(self):
+        if isinstance(self.request.user, AnonymousUser):
+            return []
+
         return Travel.objects.filter(creator=self.request.user)
 
 
@@ -69,7 +75,7 @@ def dictfetchall(cursor):
 
 
 class TravelDetail(LoginRequiredMixin, DetailView):
-    login_url = reverse_lazy('social:begin', args=('google-oauth2',))
+    login_url = reverse_lazy('login')
 
     model = Travel
     template_name = 'travel_details.html'
@@ -92,7 +98,7 @@ class TravelDetail(LoginRequiredMixin, DetailView):
 
 
 class AddPayment(LoginRequiredMixin, CreateView):
-    login_url = reverse_lazy('social:begin', args=('google-oauth2',))
+    login_url = reverse_lazy('login')
 
     template_name = 'new_payment.html'
     form_class = PaymentForm
@@ -105,13 +111,16 @@ class AddPayment(LoginRequiredMixin, CreateView):
         return form_kwargs
 
     def form_valid(self, form):
+
         travel = Travel.objects.get(pk=self.kwargs['travel_pk'])
+
         payment_data = form.save(commit=False)
         payment_data.travel_id = travel.id
         payment_data.payer = form.cleaned_data['payer']
 
         payment_data.save()
-        debitors = form.cleaned_data['debitors'].distinct()
+
+        debitors = form.cleaned_data['debitors'].filter(~Q(id=payment_data.payer.id))
 
         if debitors:
             value = payment_data.value / (len(debitors) + 1)
@@ -122,7 +131,7 @@ class AddPayment(LoginRequiredMixin, CreateView):
                            debitor=payment_data.payer)] + [
                          Debt(source=payment_data,
                               value=value,
-                              debitor=debitor) for debitor in debitors if debitor != payment_data.payer])
+                              debitor=debitor) for debitor in debitors])
 
         return HttpResponseRedirect(reverse('travel_detail', args=[travel.id]))
 
@@ -136,6 +145,7 @@ class SummaryPaymentsAndDebts(TravelDetail):
         summary = get_summary(Debt.objects
                               .filter(source__travel_id=kwargs.get('object').id)
                               .values('debitor__name', 'source__payer__name')
+                              .filter(~Q(debitor__name=F('source__payer__name')))
                               .annotate(total=Sum('value')))
 
         context['summary'] = summary
@@ -144,16 +154,31 @@ class SummaryPaymentsAndDebts(TravelDetail):
 
 
 class CreateTravel(LoginRequiredMixin, CreateView):
-    login_url = reverse_lazy('social:begin', args=('google-oauth2',))
+    login_url = reverse_lazy('login')
 
     template_name = 'new_travel.html'
     form_class = TravelForm
-    success_url = '/'
+
+    def form_valid(self, form):
+        travel_data = form.save(commit=False)
+        travel_data.creator = self.request.user
+        travel_data.save()
+        travel_data.travelers.add(*form.cleaned_data.get('travelers'))
+        travel_data.save()
+
+        return HttpResponseRedirect(reverse('travel_detail', args=[travel_data.id]))
 
 
 class NewPerson(LoginRequiredMixin, CreateView):
-    login_url = reverse_lazy('social:begin', args=('google-oauth2',))
+    login_url = reverse_lazy('login')
 
     template_name = 'new_person.html'
     form_class = PersonForm
     success_url = reverse_lazy('new_travel')
+
+    def form_valid(self, form):
+        user_data = form.save(commit=False)
+        user_data.creator = self.request.user
+        user_data.save()
+
+        return HttpResponseRedirect(reverse('new_travel'))
