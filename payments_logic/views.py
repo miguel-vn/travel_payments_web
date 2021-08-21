@@ -1,3 +1,4 @@
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import connection
 from django.db.models import Sum
 from django.shortcuts import reverse, HttpResponseRedirect, render
@@ -46,12 +47,17 @@ def about_page(request):
     return render(request, 'about.html')
 
 
-class TravelsList(ListView):
+class TravelsList(LoginRequiredMixin, ListView):
+    login_url = reverse_lazy('social:begin', args=('google-oauth2',))
+
     model = Travel
     paginate_by = 10
     template_name = 'travels_list.html'
     context_object_name = 'travels'
     ordering = ['-start_date', '-end_date']
+
+    def get_queryset(self):
+        return Travel.objects.filter(creator=self.request.user)
 
 
 def dictfetchall(cursor):
@@ -62,7 +68,9 @@ def dictfetchall(cursor):
     ]
 
 
-class TravelDetail(DetailView):
+class TravelDetail(LoginRequiredMixin, DetailView):
+    login_url = reverse_lazy('social:begin', args=('google-oauth2',))
+
     model = Travel
     template_name = 'travel_details.html'
     context_object_name = 'travel'
@@ -83,7 +91,9 @@ class TravelDetail(DetailView):
         return context
 
 
-class AddPayment(CreateView):
+class AddPayment(LoginRequiredMixin, CreateView):
+    login_url = reverse_lazy('social:begin', args=('google-oauth2',))
+
     template_name = 'new_payment.html'
     form_class = PaymentForm
     success_url = reverse_lazy('travel_detail')
@@ -133,13 +143,17 @@ class SummaryPaymentsAndDebts(TravelDetail):
         return context
 
 
-class CreateTravel(CreateView):
+class CreateTravel(LoginRequiredMixin, CreateView):
+    login_url = reverse_lazy('social:begin', args=('google-oauth2',))
+
     template_name = 'new_travel.html'
     form_class = TravelForm
     success_url = '/'
 
 
-class NewPerson(CreateView):
+class NewPerson(LoginRequiredMixin, CreateView):
+    login_url = reverse_lazy('social:begin', args=('google-oauth2',))
+
     template_name = 'new_person.html'
     form_class = PersonForm
     success_url = reverse_lazy('new_travel')
