@@ -5,7 +5,7 @@ from django.db.models import Sum, Q, F
 from django.shortcuts import reverse, HttpResponseRedirect, render
 from django.urls import reverse_lazy
 from django.views.generic import CreateView, DetailView, ListView
-
+from django.utils import timezone
 from payments_logic.models import Travel, Debt
 from .forms import TravelForm, PersonForm, PaymentForm
 
@@ -62,8 +62,14 @@ class TravelsList(ListView):  # LoginRequiredMixin, ListView):
     def get_queryset(self):
         if isinstance(self.request.user, AnonymousUser):
             return []
+        travels = Travel.objects.filter(creator=self.request.user)
+        single_current = travels.filter(start_date__lte=timezone.now(), end_date__gte=timezone.now())
 
-        return Travel.objects.filter(creator=self.request.user)
+        if len(single_current) == 1:
+            travel_id = single_current[0].id
+            return HttpResponseRedirect(reverse('travel_detail', args=[travel_id]))
+
+        return travels
 
 
 def dictfetchall(cursor):
