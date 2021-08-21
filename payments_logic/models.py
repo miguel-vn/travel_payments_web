@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 
 
 class Person(models.Model):
-    creator = models.OneToOneField(User, on_delete=models.CASCADE, to_field='username')
+    creator = models.ForeignKey(User, on_delete=models.CASCADE, to_field='username')
 
     name = models.CharField(max_length=140, null=False, editable=True)
     email = models.EmailField(null=True, editable=True)
@@ -23,7 +23,7 @@ class Travel(models.Model):
         (RUR, 'Russian Ruble'),
     ]
 
-    creator = models.OneToOneField(User, on_delete=models.CASCADE, to_field='username')
+    creator = models.ForeignKey(User, on_delete=models.CASCADE, to_field='username')
 
     title = models.CharField(max_length=100, null=False, editable=True)
     start_date = models.DateField(null=False, editable=True)
@@ -36,8 +36,6 @@ class Travel(models.Model):
 
 
 class Payment(models.Model):
-    creator = models.OneToOneField(User, on_delete=models.CASCADE, to_field='username')
-
     title = models.CharField(max_length=100, null=False)
     value = models.DecimalField(null=False, max_digits=9, decimal_places=2)
     payer = models.ForeignKey(Person, on_delete=models.DO_NOTHING)
@@ -48,8 +46,6 @@ class Payment(models.Model):
 
 
 class Debt(models.Model):
-    creator = models.OneToOneField(User, on_delete=models.CASCADE, to_field='username')
-
     source = models.ForeignKey(Payment, on_delete=models.DO_NOTHING)
     debitor = models.ForeignKey(Person, on_delete=models.DO_NOTHING)
     value = models.DecimalField(null=False, max_digits=9, decimal_places=2)
