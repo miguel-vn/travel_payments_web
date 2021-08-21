@@ -1,16 +1,20 @@
 {% extends 'base.html' %}
 {% block title %}Ваши путешествия{% endblock %}
 {% block content %}
-    <h2>Ваши путешествия</h2>
+    {% if user.is_authenticated %}
+        <h2>Ваши путешествия</h2>
+        <div class="eleven columns">
+            <a class="button" href="{% url 'new_travel' %}">Новое путешествие</a>
+            <ul>
+                {% for travel in travels %}
+                    <li><a href="{% url 'travel_detail' pk=travel.pk %}" class="row">{{ travel.title }}
+                        ({{ travel.start_date }}
+                        - {{ travel.end_date }})</a></li>
+                {% endfor %}
+            </ul>
+        </div>
+            {% else %}
+        <p>zhopa</p>
 
-    <div class="eleven columns">
-    <a class="button" href="{% url 'new_travel' %}">Новое путешествие</a>
-        <ul>
-            {% for travel in travels %}
-                <li><a href="{% url 'travel_detail' pk=travel.pk %}" class="row">{{ travel.title }}
-                    ({{ travel.start_date }}
-                    - {{ travel.end_date }})</a></li>
-            {% endfor %}
-        </ul>
-    </div>
+    {% endif %}
 {% endblock %}
