@@ -1,15 +1,15 @@
 {% extends 'base.html' %}
 {% block title %}Новое путешествие{% endblock %}
 {% block content %}
-    <script>function checkedAll(){
-  {#var isAllChecked = document.getElementById('all').checked;#}
+    <script>function checkedAll() {
+        {#var isAllChecked = document.getElementById('all').checked;#}
 
-  // Set the other checkboxes .checked property based on the
-  // .checked status of the `all` checkbox
+        // Set the other checkboxes .checked property based on the
+        // .checked status of the `all` checkbox
         {% for traveler in travelers %}
-              document.getElementById('{{ traveler.auto_id }}').checked = true;
+            document.getElementById('{{ traveler.auto_id }}').checked = true;
         {% endfor %}
-}</script>
+    }</script>
     <h1>Новое путешествие</h1>
     <form method="POST" class="post-form">{% csrf_token %}
         <fieldset>
@@ -25,6 +25,13 @@
                     {{ form.end_date }}
                 </div>
             </div>
+            {% if 'date_validation' in form.errors %}
+                <div class="row">
+                    <div class="four columns">
+                        <p><b>{{ form.errors.date_validation }}</b></p>
+                    </div>
+                </div>
+            {% endif %}
             <label for="{{ form.travelers.auto_id }}">{{ form.travelers.label }}</label>
             {{ form.travelers }}
             <p><a href="{% url 'new_person' %}" class="button">Добавить человека</a></p>
