@@ -38,16 +38,16 @@ class Travel(models.Model):
 class Payment(models.Model):
     title = models.CharField(max_length=100, null=False)
     value = models.DecimalField(null=False, max_digits=9, decimal_places=2)
-    payer = models.ForeignKey(Person, on_delete=models.DO_NOTHING)
-    travel = models.ForeignKey(Travel, on_delete=models.DO_NOTHING)
+    payer = models.ForeignKey(Person, on_delete=models.CASCADE)
+    travel = models.ForeignKey(Travel, on_delete=models.CASCADE)
 
     def __str__(self):
         return f'{self.title} - {self.value}'
 
 
 class Debt(models.Model):
-    source = models.ForeignKey(Payment, on_delete=models.DO_NOTHING)
-    debitor = models.ForeignKey(Person, on_delete=models.DO_NOTHING)
+    source = models.ForeignKey(Payment, on_delete=models.CASCADE)
+    debitor = models.ForeignKey(Person, on_delete=models.CASCADE)
     value = models.DecimalField(null=False, max_digits=9, decimal_places=2)
 
     def __str__(self):
