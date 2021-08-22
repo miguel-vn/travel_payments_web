@@ -4,48 +4,12 @@ from django.db import connection
 from django.db.models import Sum, Q, F
 from django.shortcuts import reverse, HttpResponseRedirect, render
 from django.urls import reverse_lazy
-from django.views.generic import CreateView, DetailView, ListView
 from django.utils import timezone
+from django.views.generic import CreateView, DetailView, ListView
+
+import payments_logic.service_functions as sf
 from payments_logic.models import Travel, Debt
 from .forms import TravelForm, PersonForm, PaymentForm
-
-
-def get_summary(data):
-    new_data = []
-    name_pairs = list()
-    for row in data:
-
-        deb_name = row['debitor__name']
-        payer = row['source__payer__name']
-        initial_value = row['total']
-        pair = {deb_name, payer}
-
-        for another_row in data:
-            if another_row['debitor__name'] == deb_name and another_row['source__payer__name'] == payer:
-                continue
-            if another_row['debitor__name'] == payer and another_row['source__payer__name'] == deb_name:
-                if pair in name_pairs:
-                    break
-                name_pairs.append(pair)
-                if another_row['total'] > initial_value:
-                    new_row = {'debitor__name': another_row['debitor__name'],
-                               'source__payer__name': another_row['source__payer__name'],
-                               'total': another_row['total'] - initial_value}
-                elif another_row['total'] < initial_value:
-                    new_row = {'debitor__name': deb_name,
-                               'source__payer__name': payer,
-                               'total': initial_value - another_row['total']}
-                else:
-                    continue
-                new_data.append(new_row)
-                break
-
-        if pair not in name_pairs:
-            name_pairs.append(pair)
-            new_data.append(row)
-
-    new_data = list(filter(lambda elem: elem['total'] > 0, new_data))
-    return new_data
 
 
 def about_page(request):
@@ -71,14 +35,6 @@ class TravelsList(ListView):  # LoginRequiredMixin, ListView):
         return travels
 
 
-def dictfetchall(cursor):
-    columns = [col[0] for col in cursor.description]
-    return [
-        dict(zip(columns, row))
-        for row in cursor.fetchall()
-    ]
-
-
 class TravelDetail(LoginRequiredMixin, DetailView):
     login_url = reverse_lazy('login')
 
@@ -99,13 +55,12 @@ class TravelDetail(LoginRequiredMixin, DetailView):
 
         with connection.cursor() as cur:
             cur.execute(query)
-            context['payments_list'] = dictfetchall(cur)
+            context['payments_list'] = sf.dictfetchall(cur)
 
         return context
 
 
 class AddPayment(LoginRequiredMixin, CreateView):
-    # TODO не работает добавление оплаты одним человеком без разделения на других
     login_url = reverse_lazy('login')
 
     template_name = 'new_payment.html'
@@ -119,7 +74,6 @@ class AddPayment(LoginRequiredMixin, CreateView):
         return form_kwargs
 
     def form_valid(self, form):
-
         travel = Travel.objects.get(pk=self.kwargs['travel_pk'])
 
         payment_data = form.save(commit=False)
@@ -151,11 +105,11 @@ class SummaryPaymentsAndDebts(TravelDetail):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        summary = get_summary(Debt.objects
-                              .filter(source__travel_id=kwargs.get('object').id)
-                              .values('debitor__name', 'source__payer__name')
-                              .filter(~Q(debitor__name=F('source__payer__name')))
-                              .annotate(total=Sum('value')))
+        summary = sf.get_summary(Debt.objects
+                                 .filter(source__travel_id=kwargs.get('object').id)
+                                 .values('debitor__name', 'source__payer__name')
+                                 .filter(~Q(debitor__name=F('source__payer__name')))
+                                 .annotate(total=Sum('value')))
 
         context['summary'] = summary
 
