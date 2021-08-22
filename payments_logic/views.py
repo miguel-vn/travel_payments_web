@@ -57,12 +57,11 @@ class TravelsList(ListView):  # LoginRequiredMixin, ListView):
     paginate_by = 10
     template_name = 'travels_list.html'
     context_object_name = 'travels'
-    ordering = ['-start_date', '-end_date']
 
     def get_queryset(self):
         if isinstance(self.request.user, AnonymousUser):
             return []
-        travels = Travel.objects.filter(creator=self.request.user)
+        travels = Travel.objects.filter(creator=self.request.user).order_by('-start_date', '-end_date')
         single_current = travels.filter(start_date__lte=timezone.now(), end_date__gte=timezone.now())
 
         if len(single_current) == 1:
@@ -90,11 +89,13 @@ class TravelDetail(LoginRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         query = '''
-            select d.source_id, pa.title as title, pa.value as value, group_concat(pr.name, ", ") as debitors from payments_logic_debt d
-            inner join payments_logic_payment pa on d.source_id = pa.id
-            inner join payments_logic_person pr on pr.id = d.debitor_id
+            select pa.id, pr.name, pa.title as title, pa.value as value, group_concat(pr2.name, ", ") as debitors 
+            from payments_logic_payment pa
+            inner join payments_logic_person pr on pr.id = pa.payer_id
+            left join payments_logic_debt d on d.source_id = pa.id
+            left join payments_logic_person pr2 on pr2.id = d.debitor_id
             where pa.travel_id = %s
-            group by d.source_id''' % kwargs.get('object').id
+            group by pa.id, pr.name''' % kwargs.get('object').id
 
         with connection.cursor() as cur:
             cur.execute(query)
@@ -104,6 +105,7 @@ class TravelDetail(LoginRequiredMixin, DetailView):
 
 
 class AddPayment(LoginRequiredMixin, CreateView):
+    # TODO не работает добавление оплаты одним человеком без разделения на других
     login_url = reverse_lazy('login')
 
     template_name = 'new_payment.html'
@@ -143,6 +145,7 @@ class AddPayment(LoginRequiredMixin, CreateView):
 
 
 class SummaryPaymentsAndDebts(TravelDetail):
+    # TODO Продумать возможность сокращения цепочки долгов (например Ксюша - я - Вова = Ксюша - Вова)
     template_name = 'summary.html'
     context_object_name = 'summary'
 
