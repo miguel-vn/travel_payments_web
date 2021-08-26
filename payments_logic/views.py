@@ -5,10 +5,10 @@ from django.db.models import Sum, Q, F
 from django.shortcuts import reverse, HttpResponseRedirect, render
 from django.urls import reverse_lazy
 from django.utils import timezone
-from django.views.generic import CreateView, DetailView, ListView
+from django.views.generic import CreateView, DetailView, ListView, UpdateView, DeleteView
 
 import payments_logic.service_functions as sf
-from payments_logic.models import Travel, Debt
+from payments_logic.models import Travel, Debt, Payment
 from .forms import TravelForm, PersonForm, PaymentForm
 
 
@@ -39,7 +39,7 @@ class TravelDetail(LoginRequiredMixin, DetailView):
     login_url = reverse_lazy('login')
 
     model = Travel
-    template_name = 'travel_details.html'
+    template_name = 'travels/travel_details.html'
     context_object_name = 'travel'
 
     def get_context_data(self, **kwargs):
@@ -60,10 +60,12 @@ class TravelDetail(LoginRequiredMixin, DetailView):
         return context
 
 
-class AddPayment(LoginRequiredMixin, CreateView):
+class BaseOperations(LoginRequiredMixin):
     login_url = reverse_lazy('login')
 
-    template_name = 'new_payment.html'
+
+class AddPayment(BaseOperations, CreateView):
+    template_name = 'payments/new_payment.html'
     form_class = PaymentForm
     success_url = reverse_lazy('travel_detail')
 
@@ -98,6 +100,32 @@ class AddPayment(LoginRequiredMixin, CreateView):
         return HttpResponseRedirect(reverse('travel_detail', args=[travel.id]))
 
 
+class UpdatePayment(BaseOperations, UpdateView):
+    template_name = 'payments/payment_update.html'
+    model = Payment
+    form_class = PaymentForm
+
+    def get_form_kwargs(self, *args, **kwargs):
+        form_kwargs = super(UpdatePayment, self).get_form_kwargs()
+        form_kwargs.update({'travel_id': self.kwargs['travel_pk']})
+        form_kwargs.update({'source_id': self.kwargs['source_id']})
+
+        return form_kwargs
+
+    form_valid = AddPayment.form_valid
+
+    def get_success_url(self):
+        return reverse('travel_detail', kwargs={'pk': self.kwargs['pk']})
+
+
+class DeletePayment(BaseOperations, DeleteView):
+    model = Payment
+    template_name = 'payments/payment_confirm_delete.html'
+
+    def get_success_url(self):
+        return reverse('travel_detail', kwargs={'pk': self.kwargs['pk']})
+
+
 class SummaryPaymentsAndDebts(TravelDetail):
     # TODO Продумать возможность сокращения цепочки долгов (например Ксюша - я - Вова = Ксюша - Вова)
     template_name = 'summary.html'
@@ -116,10 +144,8 @@ class SummaryPaymentsAndDebts(TravelDetail):
         return context
 
 
-class CreateTravel(LoginRequiredMixin, CreateView):
-    login_url = reverse_lazy('login')
-
-    template_name = 'new_travel.html'
+class CreateTravel(BaseOperations, CreateView):
+    template_name = 'travels/new_travel.html'
     form_class = TravelForm
 
     def form_valid(self, form):
@@ -132,9 +158,22 @@ class CreateTravel(LoginRequiredMixin, CreateView):
         return HttpResponseRedirect(reverse('travel_detail', args=[travel_data.id]))
 
 
-class NewPerson(LoginRequiredMixin, CreateView):
-    login_url = reverse_lazy('login')
+class UpdateTravel(BaseOperations, UpdateView):
+    template_name = 'travels/travel_update.html'
+    model = Travel
+    form_class = TravelForm
 
+    def get_success_url(self):
+        return reverse('travel_detail', kwargs={'pk': self.kwargs['pk']})
+
+
+class DeleteTravel(BaseOperations, DeleteView):
+    model = Travel
+    template_name = 'travels/travel_confirm_delete.html'
+    success_url = reverse_lazy('travels_list')
+
+
+class NewPerson(BaseOperations, CreateView):
     template_name = 'new_person.html'
     form_class = PersonForm
     success_url = reverse_lazy('new_travel')

@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load static %}
 {% block title %}{{ travel.title }}{% endblock %}
 {% block content %}
     <h1>
@@ -26,7 +27,7 @@
                 {% endfor %}
             </ul>
         </div>
-    <p><a href="{% url 'travels_list' %}">Назад к списку путешествий</a></p>
+        <p><a href="{% url 'travels_list' %}">Назад к списку путешествий</a></p>
 
     </div>
 {% endblock %}
