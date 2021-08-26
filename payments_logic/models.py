@@ -1,5 +1,8 @@
-from django.db import models
+from decimal import Decimal
+
 from django.contrib.auth.models import User
+from django.core.validators import MinValueValidator
+from django.db import models
 
 
 class Person(models.Model):
@@ -37,7 +40,12 @@ class Travel(models.Model):
 
 class Payment(models.Model):
     title = models.CharField(max_length=100, null=False)
-    value = models.DecimalField(null=False, max_digits=9, decimal_places=2)
+    value = models.DecimalField(null=False,
+                                max_digits=9,
+                                decimal_places=2,
+                                validators=[MinValueValidator(Decimal('0.01'),
+                                                              message='Значение должно быть больше 0.01')])
+
     payer = models.ForeignKey(Person, on_delete=models.CASCADE)
     travel = models.ForeignKey(Travel, on_delete=models.CASCADE)
 
