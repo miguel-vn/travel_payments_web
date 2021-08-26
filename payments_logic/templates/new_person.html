@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+{% block title %}Новый путешественник{% endblock %}
+{% block content %}
+    <h1>Новый путешественник</h1>
+    <form method="POST" class="post-form">{% csrf_token %}
+        {{ form }}
+        <button type="submit" class="save btn btn-default">Добавить</button>
+    </form>
+{% endblock %}

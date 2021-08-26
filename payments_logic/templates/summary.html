@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+{% block title %}{{ travel.title }}{% endblock %}
+{% block content %}
+
+    <h2>Кто кому должен:</h2>
+    {% for row in summary %}
+        <p>{{ row.debitor__name }} -> {{ row.source__payer__name }}: {{ row.total|floatformat:2 }}</p>
+    {% endfor %}
+
+    <p><a href="{% url 'travel_detail' object.pk %}">Назад к путешествию</a></p>
+{% endblock %}

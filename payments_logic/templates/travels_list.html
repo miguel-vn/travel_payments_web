@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Ваши путешествия{% endblock %}
+{% block content %}
+    {% if user.is_authenticated %}
+        <h2>Ваши путешествия</h2>
+        <div class="eleven columns">
+            <a class="button" href="{% url 'new_travel' %}">Новое путешествие</a>
+            <ul>
+                {% for travel in travels %}
+                    <li class="row"><a href="{% url 'travel_detail' pk=travel.pk %}">{{ travel.title }}
+                        ({{ travel.start_date }}
+                        - {{ travel.end_date }})</a> <a href="{% url 'travel_update' pk=travel.pk %}"><img
+                            src="{% static 'images/mode_edit_black_24dp.svg' %}" alt="Редактировать информацию"></a>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% else %}
+        <p>Авторизуйтесь, чтобы получить доступ к созданию и просмотру путешествий</p>
+
+    {% endif %}
+{% endblock %}
