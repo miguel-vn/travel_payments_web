@@ -14,6 +14,8 @@
         <a class="toplinks button" href="{% url 'login' %}">Вход</a>
     {% else %}
         <a class="toplinks button" href="{% url "social:disconnect" "google-oauth2" %}">Logout</a>
+
+{#        <a class="toplinks button" href="{% url "social:disconnect" "google-oauth2" %}">Logout</a>#}
     {% endif %}
 
 
