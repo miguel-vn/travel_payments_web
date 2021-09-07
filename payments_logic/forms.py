@@ -1,30 +1,46 @@
 from django import forms
+from django.contrib.auth.models import User
+from django.db.models import Q
 
-from .models import Travel, Person, Payment
+from .models import Travel, Payment, Friendship
 
 
-class PersonForm(forms.ModelForm):
-    class Meta:
-        model = Person
-        fields = ('name',)
-        widgets = {'name': forms.TextInput()}
-        labels = {'name': 'Имя'}
+class PersonForm(forms.Form):
+    name = forms.CharField(max_length=140)
+    email = forms.EmailField(required=True)
+
+    widgets = {'name': forms.TextInput(),
+               'email': forms.EmailInput()}
+    labels = {'name': 'Имя',
+              'email': 'email'}
+
+
+class SpecificChoiseField(forms.ModelMultipleChoiceField):
+    def label_from_instance(self, obj):
+        return f'{obj.first_name} {obj.last_name}'
 
 
 class TravelForm(forms.ModelForm):
     class Meta:
         model = Travel
-        fields = ('title', 'start_date', 'end_date', 'travelers')
-
+        fields = ('title', 'start_date', 'end_date')
+        labels = {'start_date': 'Дата старта',
+                  'end_date': 'Дата окончания',
+                  'title': 'Что за поездка?'}
         widgets = {'start_date': forms.DateInput(attrs={'type': 'date'}),
                    'end_date': forms.DateInput(attrs={'type': 'date'}),
-                   'title': forms.TextInput(attrs={'placeholder': 'Title of your travel'}),
-                   'travelers': forms.CheckboxSelectMultiple()}
+                   'title': forms.TextInput(attrs={'placeholder': 'Title of your travel'})}
 
-        labels = {'title': 'Что за поездка?',
-                  'start_date': 'Дата старта',
-                  'end_date': 'Дата окончания',
-                  'travelers': 'Кто едет?'}
+    def __init__(self, **kwargs):
+        current_user = kwargs.pop('current_user')
+        super(TravelForm, self).__init__(**kwargs)
+
+        friends_ids = Friendship.objects.filter(creator__username=current_user).values_list('friend__username')
+
+        self.fields['travelers'] = SpecificChoiseField(
+            User.objects.filter(Q(username__in=friends_ids) | Q(username=current_user)),
+            label='Кто едет?',
+            widget=forms.CheckboxSelectMultiple(), to_field_name='username')
 
     def clean(self):
         super(TravelForm, self).clean()

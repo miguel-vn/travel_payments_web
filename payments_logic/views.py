@@ -1,15 +1,16 @@
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.contrib.auth.models import AnonymousUser
+from django.contrib.auth.models import AnonymousUser, User
 from django.db import connection
 from django.db.models import Sum, Q, F
 from django.shortcuts import reverse, HttpResponseRedirect, render
 from django.urls import reverse_lazy
 from django.utils import timezone
-from django.views.generic import CreateView, DetailView, ListView, UpdateView, DeleteView
+from django.views.generic import CreateView, DetailView, ListView, UpdateView, DeleteView, FormView
 
 import payments_logic.service_functions as sf
-from payments_logic.models import Travel, Debt, Payment
+from payments_logic.models import Travel, Debt, Payment, Friendship
 from .forms import TravelForm, PersonForm, PaymentForm
+import uuid
 
 
 def about_page(request):
@@ -25,12 +26,11 @@ class TravelsList(ListView):  # LoginRequiredMixin, ListView):
     def get_queryset(self):
         if isinstance(self.request.user, AnonymousUser):
             return []
-        travels = Travel.objects.filter(creator=self.request.user).order_by('-start_date', '-end_date')
-        single_current = travels.filter(start_date__lte=timezone.now(), end_date__gte=timezone.now())
-
-        if len(single_current) == 1:
-            travel_id = single_current[0].id
-            return HttpResponseRedirect(reverse('travel_detail', args=[travel_id]))
+        travels = Travel.objects.filter(travelers__username=self.request.user.username).order_by('-start_date', '-end_date')
+        # single_current = travels.filter(start_date__lte=timezone.now(), end_date__gte=timezone.now())
+        # if len(list(single_current)) == 1:
+        #     travel_id = single_current[0].id
+        #     return HttpResponseRedirect(reverse('travel_detail', args=[travel_id]))
 
         return travels
 
@@ -148,11 +148,20 @@ class CreateTravel(BaseOperations, CreateView):
     template_name = 'travels/new_travel.html'
     form_class = TravelForm
 
+    def get_form_kwargs(self, *args, **kwargs):
+        form_kwargs = super(CreateTravel, self).get_form_kwargs()
+        form_kwargs.update({'current_user': self.request.user.username})
+        return form_kwargs
+
     def form_valid(self, form):
+        print('form', form.data)
         travel_data = form.save(commit=False)
-        travel_data.creator = self.request.user
+        print('travel_data', travel_data)
+        travel_data.creator = User.objects.get(username=self.request.user.username)
         travel_data.save()
+        print('form.cleaned_data', form.cleaned_data)
         travel_data.travelers.add(*form.cleaned_data.get('travelers'))
+        print('travel_data2', travel_data)
         travel_data.save()
 
         return HttpResponseRedirect(reverse('travel_detail', args=[travel_data.id]))
@@ -173,14 +182,30 @@ class DeleteTravel(BaseOperations, DeleteView):
     success_url = reverse_lazy('travels_list')
 
 
-class NewPerson(BaseOperations, CreateView):
+class NewPerson(BaseOperations, FormView):
     template_name = 'new_person.html'
     form_class = PersonForm
     success_url = reverse_lazy('new_travel')
 
     def form_valid(self, form):
-        user_data = form.save(commit=False)
-        user_data.creator = self.request.user
-        user_data.save()
+        form_data = form.cleaned_data
+        email = form_data.get('email', None)
+        name = form_data.get('name')
+        if email:
+            username = email[:email.index('@')]
+        else:
+            username = name + str(uuid.uuid4())[:8]
+
+        creator = User.objects.get(username=self.request.user.username)
+
+        existing_user = User.objects.filter(email=email)
+        if not existing_user:
+            existing_user = User.objects.create_user(username=username, first_name=name, email=email)
+            existing_user.save()
+        else:
+            existing_user = existing_user[0]
+
+        new_friendship = Friendship(creator=creator, friend=existing_user)
+        new_friendship.save()
 
         return HttpResponseRedirect(reverse('new_travel'))
