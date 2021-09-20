@@ -15,9 +15,14 @@ class PersonForm(forms.Form):
               'email': 'email'}
 
 
-class SpecificChoiseField(forms.ModelMultipleChoiceField):
+class UserChoiseField(forms.ModelChoiceField):
     def label_from_instance(self, obj):
-        return f'{obj.first_name} {obj.last_name}'
+        return obj.get_full_name()  # f'{obj.first_name} {obj.last_name}'
+
+
+class UserMultipleChoiseField(forms.ModelMultipleChoiceField):
+    def label_from_instance(self, obj):
+        return obj.get_full_name()
 
 
 class TravelForm(forms.ModelForm):
@@ -37,10 +42,11 @@ class TravelForm(forms.ModelForm):
 
         friends_ids = Friendship.objects.filter(creator__username=current_user).values_list('friend__username')
 
-        self.fields['travelers'] = SpecificChoiseField(
+        self.fields['travelers'] = UserMultipleChoiseField(
             User.objects.filter(Q(username__in=friends_ids) | Q(username=current_user)),
             label='Кто едет?',
-            widget=forms.CheckboxSelectMultiple(), to_field_name='username')
+            widget=forms.CheckboxSelectMultiple(),
+            to_field_name='username')
 
     def clean(self):
         super(TravelForm, self).clean()
@@ -57,11 +63,11 @@ class PaymentForm(forms.ModelForm):
         travel_id = kwargs.pop('travel_id')
         super(PaymentForm, self).__init__(**kwargs)
         travelers = Travel.objects.get(pk=travel_id).travelers.all()
-        self.fields['payer'] = forms.ModelChoiceField(travelers, label='Кто платит?', widget=forms.RadioSelect())
-        self.fields['debitors'] = forms.ModelMultipleChoiceField(travelers,
-                                                                 label='На кого разделить счет?',
-                                                                 widget=forms.CheckboxSelectMultiple(),
-                                                                 required=False)
+        self.fields['payer'] = UserChoiseField(travelers, label='Кто платит?', widget=forms.RadioSelect())
+        self.fields['debitors'] = UserMultipleChoiseField(travelers,
+                                                          label='На кого разделить счет?',
+                                                          widget=forms.CheckboxSelectMultiple(),
+                                                          required=False)
 
     class Meta:
         model = Payment

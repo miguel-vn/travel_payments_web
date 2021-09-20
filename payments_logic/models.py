@@ -24,7 +24,7 @@ class Travel(models.Model):
     title = models.CharField(max_length=100, null=False, editable=True)
     start_date = models.DateField(null=False, editable=True)
     end_date = models.DateField(null=False, editable=True)
-    travelers = models.ManyToManyField(User, null=False)
+    travelers = models.ManyToManyField(User, editable=True)
     currency = models.CharField(max_length=3, choices=CURRENCIES, default=RUR)
 
     def __str__(self):

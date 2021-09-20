@@ -11,25 +11,25 @@ def get_summary(data):
     name_pairs = list()
     for row in data:
 
-        deb_name = row['debitor__name']
-        payer = row['source__payer__name']
+        deb_name = row['debitor__username']
+        payer = row['source__payer__username']
         initial_value = row['total']
         pair = {deb_name, payer}
 
         for another_row in data:
-            if another_row['debitor__name'] == deb_name and another_row['source__payer__name'] == payer:
+            if another_row['debitor__username'] == deb_name and another_row['source__payer__username'] == payer:
                 continue
-            if another_row['debitor__name'] == payer and another_row['source__payer__name'] == deb_name:
+            if another_row['debitor__username'] == payer and another_row['source__payer__username'] == deb_name:
                 if pair in name_pairs:
                     break
                 name_pairs.append(pair)
                 if another_row['total'] > initial_value:
-                    new_row = {'debitor__name': another_row['debitor__name'],
-                               'source__payer__name': another_row['source__payer__name'],
+                    new_row = {'debitor__username': another_row['debitor__username'],
+                               'source__payer__username': another_row['source__payer__username'],
                                'total': another_row['total'] - initial_value}
                 elif another_row['total'] < initial_value:
-                    new_row = {'debitor__name': deb_name,
-                               'source__payer__name': payer,
+                    new_row = {'debitor__username': deb_name,
+                               'source__payer__username': payer,
                                'total': initial_value - another_row['total']}
                 else:
                     continue

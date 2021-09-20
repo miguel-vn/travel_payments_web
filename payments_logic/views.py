@@ -1,23 +1,23 @@
+import uuid
+
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.models import AnonymousUser, User
 from django.db import connection
 from django.db.models import Sum, Q, F
 from django.shortcuts import reverse, HttpResponseRedirect, render
 from django.urls import reverse_lazy
-from django.utils import timezone
 from django.views.generic import CreateView, DetailView, ListView, UpdateView, DeleteView, FormView
 
 import payments_logic.service_functions as sf
 from payments_logic.models import Travel, Debt, Payment, Friendship
 from .forms import TravelForm, PersonForm, PaymentForm
-import uuid
 
 
 def about_page(request):
     return render(request, 'about.html')
 
 
-class TravelsList(ListView):  # LoginRequiredMixin, ListView):
+class TravelsList(ListView):
     model = Travel
     paginate_by = 10
     template_name = 'travels_list.html'
@@ -26,18 +26,17 @@ class TravelsList(ListView):  # LoginRequiredMixin, ListView):
     def get_queryset(self):
         if isinstance(self.request.user, AnonymousUser):
             return []
-        travels = Travel.objects.filter(travelers__username=self.request.user.username).order_by('-start_date', '-end_date')
-        # single_current = travels.filter(start_date__lte=timezone.now(), end_date__gte=timezone.now())
-        # if len(list(single_current)) == 1:
-        #     travel_id = single_current[0].id
-        #     return HttpResponseRedirect(reverse('travel_detail', args=[travel_id]))
+        travels = Travel.objects.filter(travelers__username=self.request.user.username).order_by('-start_date',
+                                                                                                 '-end_date')
 
         return travels
 
 
-class TravelDetail(LoginRequiredMixin, DetailView):
+class BaseOperations(LoginRequiredMixin):
     login_url = reverse_lazy('login')
 
+
+class TravelDetail(BaseOperations, DetailView):
     model = Travel
     template_name = 'travels/travel_details.html'
     context_object_name = 'travel'
@@ -45,23 +44,19 @@ class TravelDetail(LoginRequiredMixin, DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         query = '''
-            select pa.id, pr.name, pa.title as title, pa.value as value, group_concat(pr2.name, ", ") as debitors 
+            select pa.id, pr.first_name || ' ' || pr.last_name, pa.title as title, pa.value as value, group_concat(pr2.first_name || ' ' || pr2.last_name, ", ") as debitors 
             from payments_logic_payment pa
-            inner join payments_logic_person pr on pr.id = pa.payer_id
+            inner join auth_user pr on pr.id = pa.payer_id
             left join payments_logic_debt d on d.source_id = pa.id
-            left join payments_logic_person pr2 on pr2.id = d.debitor_id
+            left join auth_user pr2 on pr2.id = d.debitor_id
             where pa.travel_id = %s
-            group by pa.id, pr.name''' % kwargs.get('object').id
+            group by pa.id, pr.first_name, pr.last_name''' % kwargs.get('object').id
 
         with connection.cursor() as cur:
             cur.execute(query)
             context['payments_list'] = sf.dictfetchall(cur)
 
         return context
-
-
-class BaseOperations(LoginRequiredMixin):
-    login_url = reverse_lazy('login')
 
 
 class AddPayment(BaseOperations, CreateView):
@@ -135,12 +130,11 @@ class SummaryPaymentsAndDebts(TravelDetail):
         context = super().get_context_data(**kwargs)
         summary = sf.get_summary(Debt.objects
                                  .filter(source__travel_id=kwargs.get('object').id)
-                                 .values('debitor__name', 'source__payer__name')
-                                 .filter(~Q(debitor__name=F('source__payer__name')))
+                                 .values('debitor__username', 'source__payer__username')
+                                 .filter(~Q(debitor__username=F('source__payer__username')))
                                  .annotate(total=Sum('value')))
 
         context['summary'] = summary
-
         return context
 
 
@@ -154,14 +148,8 @@ class CreateTravel(BaseOperations, CreateView):
         return form_kwargs
 
     def form_valid(self, form):
-        print('form', form.data)
-        travel_data = form.save(commit=False)
-        print('travel_data', travel_data)
-        travel_data.creator = User.objects.get(username=self.request.user.username)
-        travel_data.save()
-        print('form.cleaned_data', form.cleaned_data)
+        travel_data = form.save()
         travel_data.travelers.add(*form.cleaned_data.get('travelers'))
-        print('travel_data2', travel_data)
         travel_data.save()
 
         return HttpResponseRedirect(reverse('travel_detail', args=[travel_data.id]))
