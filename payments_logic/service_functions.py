@@ -1,3 +1,6 @@
+from django.contrib.auth.models import User
+
+
 def dictfetchall(cursor):
     columns = [col[0] for col in cursor.description]
     return [
@@ -24,12 +27,12 @@ def get_summary(data):
                     break
                 name_pairs.append(pair)
                 if another_row['total'] > initial_value:
-                    new_row = {'debitor__username': another_row['debitor__username'],
-                               'source__payer__username': another_row['source__payer__username'],
+                    new_row = {'debitor': User.objects.get(username=another_row['debitor__username']),
+                               'payer': User.objects.get(username=another_row['source__payer__username']),
                                'total': another_row['total'] - initial_value}
                 elif another_row['total'] < initial_value:
-                    new_row = {'debitor__username': deb_name,
-                               'source__payer__username': payer,
+                    new_row = {'debitor': User.objects.get(username=deb_name),
+                               'payer': User.objects.get(username=payer),
                                'total': initial_value - another_row['total']}
                 else:
                     continue
@@ -38,7 +41,10 @@ def get_summary(data):
 
         if pair not in name_pairs:
             name_pairs.append(pair)
-            new_data.append(row)
+
+            new_data.append({'debitor': User.objects.get(username=row['debitor__username']),
+                             'payer': User.objects.get(username=row['source__payer__username']),
+                             'total': initial_value})
 
     new_data = list(filter(lambda elem: elem['total'] > 0, new_data))
     return new_data

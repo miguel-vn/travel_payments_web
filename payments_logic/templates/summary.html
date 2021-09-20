@@ -4,8 +4,7 @@
 
     <h2>Кто кому должен:</h2>
     {% for row in summary %}
-        {{ row }}
-        <p>{{ row.debitor__fullname }} {{ row.debitor__lastname }} -> {{ row.source__payer__firstname }} {{ row.source__payer__lastname }}: {{ row.total|floatformat:2 }}</p>
+        <p>{{ row.debitor.get_full_name }} -> {{ row.payer.get_full_name }}: {{ row.total|floatformat:2 }}</p>
     {% endfor %}
 
     <p><a href="{% url 'travel_detail' object.pk %}">Назад к путешествию</a></p>
