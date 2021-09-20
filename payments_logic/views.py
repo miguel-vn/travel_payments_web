@@ -160,6 +160,11 @@ class UpdateTravel(BaseOperations, UpdateView):
     model = Travel
     form_class = TravelForm
 
+    def get_form_kwargs(self, *args, **kwargs):
+        form_kwargs = super(UpdateTravel, self).get_form_kwargs()
+        form_kwargs.update({'current_user': self.request.user.username})
+        return form_kwargs
+
     def get_success_url(self):
         return reverse('travel_detail', kwargs={'pk': self.kwargs['pk']})
 
