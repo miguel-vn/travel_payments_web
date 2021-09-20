@@ -11,7 +11,7 @@
             <h2>Путешественники:</h2>
             <ul>
                 {% for person in travel.travelers.all %}
-                    <li>{{ person.name }}</li>
+                    <li>{{ person.first_name }} {{ person.last_name }}</li>
                 {% endfor %}
             </ul>
         </div>
