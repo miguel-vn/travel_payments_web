@@ -45,7 +45,7 @@ class TravelDetail(BaseOperations, DetailView):
         context = super().get_context_data(**kwargs)
         travel_object = kwargs.get('object')
         query = '''
-            select pa.id, pr.first_name || ' ' || pr.last_name as name, pa.title as title, pa.value as value, group_concat(pr2.first_name || ' ' || pr2.last_name, ", ") as debitors 
+            select pa.id, concat(pr.first_name, ' ', pr.last_name) as name, pa.title as title, pa.value as value, group_concat(concat(pr2.first_name, ' ',  pr2.last_name) separator ', ') as debitors 
             from payments_logic_payment pa
             inner join auth_user pr on pr.id = pa.payer_id
             left join payments_logic_debt d on d.source_id = pa.id
