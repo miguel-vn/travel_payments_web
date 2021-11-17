@@ -14,7 +14,7 @@ from .forms import TravelForm, PersonForm, PaymentForm
 
 
 def about_page(request):
-    return render(request, 'about.html')
+    return render(request, '../templates/about.html')
 
 
 class TravelsList(ListView):
