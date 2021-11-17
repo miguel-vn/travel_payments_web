@@ -14,7 +14,7 @@ from .forms import TravelForm, PersonForm, PaymentForm
 
 
 def about_page(request):
-    return render(request, 'about.html')
+    return render(request, '../templates/about.html')
 
 
 class TravelsList(ListView):
@@ -43,14 +43,15 @@ class TravelDetail(BaseOperations, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        travel_object = kwargs.get('object')
         query = '''
-            select pa.id, pr.first_name || ' ' || pr.last_name, pa.title as title, pa.value as value, group_concat(pr2.first_name || ' ' || pr2.last_name, ", ") as debitors 
+            select pa.id, concat(pr.first_name, ' ', pr.last_name) as name, pa.title as title, pa.value as value, group_concat(concat(pr2.first_name, ' ',  pr2.last_name) separator ', ') as debitors 
             from payments_logic_payment pa
             inner join auth_user pr on pr.id = pa.payer_id
             left join payments_logic_debt d on d.source_id = pa.id
             left join auth_user pr2 on pr2.id = d.debitor_id
             where pa.travel_id = %s
-            group by pa.id, pr.first_name, pr.last_name''' % kwargs.get('object').id
+            group by pa.id, pr.first_name, pr.last_name''' % travel_object.id
 
         with connection.cursor() as cur:
             cur.execute(query)

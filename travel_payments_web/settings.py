@@ -13,19 +13,27 @@ https://docs.djangoproject.com/en/3.2/ref/settings/
 import os
 from pathlib import Path
 
+import dotenv
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
+
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+dotenv_file = os.path.join(BASE_DIR, ".env")
+if os.path.isfile(dotenv_file):
+    dotenv.load_dotenv(dotenv_file)
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-(05l%%9bu)w7=kvh=nxe2px8i#2egm_tn$n9$#wm3!&q)zgl)k'
+SECRET_KEY = os.getenv('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = bool(int(os.getenv('DEBUG')))
+SECURE_SSL_REDIRECT = not DEBUG
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [] if DEBUG else ['travelpayments.ru', 'www.travelpayments.ru']
 
 # Application definition
 
@@ -37,6 +45,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'payments_logic.apps.PaymentsLogicConfig',
+    'news_blog.apps.NewsBlogConfig',
     'social_django'
 ]
 
@@ -62,7 +71,9 @@ ROOT_URLCONF = 'travel_payments_web.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, 'templates')],
+        'DIRS': [BASE_DIR / 'templates',
+                 BASE_DIR / 'payments_logic' / 'templates',
+                 BASE_DIR / 'news_blog' / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -82,12 +93,23 @@ WSGI_APPLICATION = 'travel_payments_web.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+if DEBUG:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': os.getenv('DB_NAME'),
+            'USER': os.getenv('DB_USERNAME'),
+            'PASSWORD': os.getenv('DB_PASSWORD'),
+            'HOST': 'localhost',
+            'OPTIONS': {'init_command': "SET sql_mode='STRICT_TRANS_TABLES'"}},
+    }
 
 # Password validation
 # https://docs.djangoproject.com/en/3.2/ref/settings/#auth-password-validators
@@ -123,6 +145,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.2/howto/static-files/
 
+STATIC_ROOT = BASE_DIR / 'static'
 STATIC_URL = '/static/'
 
 # Default primary key field type
@@ -144,7 +167,7 @@ SOCIAL_AUTH_PIPELINE = (
 )
 
 SOCIAL_AUTH_ADMIN_USER_SEARCH_FIELDS = ['creator.username', 'creator.first_name', 'creator.email']
-SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = ''
-SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = ''
+SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = os.getenv('GOOGLE_OAUTH2_KEY')
+SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = os.getenv('GOOGLE_OAUTH2_SECRET')
 SOCIAL_AUTH_LOGIN_REDIRECT_URL = '/'
 SOCIAL_AUTH_DISCONNECT_REDIRECT_URL = '/'
