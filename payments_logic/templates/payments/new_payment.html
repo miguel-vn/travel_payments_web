@@ -11,31 +11,49 @@
         }
     </script>
     <h1>Новая оплата</h1>
-    <form method="POST" class="post-form">{% csrf_token %}
-        <fieldset>
-            <label for="{{ form.title.auto_id }}">{{ form.title.label }}</label>
+    <form method="POST">{% csrf_token %}
+        <div class="form-group row">
+            <label class="form-label" for="{{ form.title.auto_id }}">{{ form.title.label }}</label>
             {{ form.title }}
-            <label for="{{ form.value.auto_id }}">{{ form.value.label }}</label>
+        </div>
+        <br>
+        <div class="form-group row">
+            <label class="form-label" for="{{ form.value.auto_id }}">{{ form.value.label }}</label>
             {{ form.value }}
-            <div class="row">
-                <div class="six columns">
-                    <label for="{{ form.payer.auto_id }}">{{ form.payer.label }}</label>
-                    {{ form.payer }}
-                </div>
-                <div class="six columns">
-                    <label>{{ form.debitors.label }}
-                        <br>
-                        <label for="check_all_debitors"><input type="checkbox" onClick="toggle(this)"
-                                                               id="check_all_debitors">
-                            Выбрать всех</label>
-                        {% for deb in form.debitors %}
-                            {{ deb }}
-                        {% endfor %}
-                    </label>
-                </div>
+        </div>
+        <br>
+        <div class="form-group row">
+            <label class="form-label" for="{{ form.dt_created.auto_id }}">{{ form.dt_created.label }}</label>
+            {{ form.dt_created }}
+        </div>
+        <br>
+        <div class="form-group row">
+            <div class="col">
+                <label class="form-check-label" for="{{ form.payer.auto_id }}">{{ form.payer.label }}</label>
+                {% for payer in form.payer %}
+                    <div class="form-check">
+                        {{ payer }}
+                    </div>
+                {% endfor %}
             </div>
-            <br>
-            <button type="submit" class="save btn btn-default">Добавить</button>
-        </fieldset>
+            <div class="col">
+                <label>{{ form.debitors.label }}
+                    <br>
+                    <div class="form-check">
+                        <label class="form-check-label" for="check_all_debitors">
+                            <input class="form-check-input" type="checkbox" onClick="toggle(this)"
+                                   id="check_all_debitors">Выбрать всех</label>
+                    </div>
+                    {% for deb in form.debitors %}
+                        <div class="form-check">
+                            {{ deb }}
+                        </div>
+                    {% endfor %}
+                </label>
+            </div>
+        </div>
+        <br>
+        <button type="submit" class="btn btn-outline-success">Добавить</button>
+        <a href="{% url 'travel_detail' travel_id %}" class="btn btn-outline-danger">Отмена</a>
     </form>
 {% endblock %}

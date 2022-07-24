@@ -3,9 +3,12 @@
 {% block content %}
 
     <h2>Кто кому должен:</h2>
-    {% for row in summary %}
-        <p>{{ row.debitor.get_full_name }} -> {{ row.payer.get_full_name }}: {{ row.total|floatformat:2 }}</p>
-    {% endfor %}
+    <ul class="list-group list-group-flush">
+        {% for row in summary %}
+            <li class="list-group-item">{{ row.debitor.get_full_name }} -> {{ row.payer.get_full_name }}: {{ row.total|floatformat:2 }}</li>
+        {% endfor %}
+    </ul>
 
-    <p><a href="{% url 'travel_detail' object.pk %}">Назад к путешествию</a></p>
+    <a href="{% url 'travel_detail' object.pk %}" class="btn btn-outline-primary">Назад к путешествию</a>
+
 {% endblock %}

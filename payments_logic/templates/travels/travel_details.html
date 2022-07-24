@@ -2,32 +2,66 @@
 {% load static %}
 {% block title %}{{ travel.title }}{% endblock %}
 {% block content %}
-    <h1>
-        <span>{{ travel.title }}</span>
-        <span>{{ travel.start_date }} - {{ travel.end_date }}</span>
-    </h1>
     <div class="row">
-        <div class="six columns">
-            <h2>Путешественники:</h2>
-            <ul>
-                {% for person in travel.travelers.all %}
-                    <li>{{ person.first_name }} {{ person.last_name }}</li>
-                {% endfor %}
-            </ul>
+        <div class="col">
+            <h1>{{ travel.title }}</h1>
+            <h6 class="text-muted">{{ travel.start_date }} - {{ travel.end_date }}</h6>
+            <a href="{% url 'travels_list' %}" class="btn btn-outline-primary">Назад к списку</a>
+            <a href="{% url 'summaries' travel.pk %}" class="btn btn-outline-success">Посмотреть итоги</a>
         </div>
-        <div class="six columns">
-
-            <h2>Список платежей:</h2>
-            <p><a href="{% url 'new_payment' travel.pk %}" class="button">Добавить оплату</a><a
-                    href="{% url 'summaries' travel.pk %}" class="button">Итоги</a></p>
-            <ul>
-                {% for payment in payments_list %}
-                    <li>{{ payment.title }} - {{ payment.value|floatformat:2 }}. Оплатил {{ payment.name }}. {% if payment.debitors %}Делится
-                        между {{ payment.debitors }}{% endif %}</li>
-                {% endfor %}
-            </ul>
+        <div class="col">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Путешественники:</h5>
+                    <ul class="list-group list-group-flush">
+                        {% for person in travel.travelers.all %}
+                            <li class="list-group-item">{{ person.first_name }} {{ person.last_name }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
         </div>
-        <p><a href="{% url 'travels_list' %}">Назад к списку путешествий</a></p>
+    </div>
+    <br>
+    <div class="row">
+        <div class="col">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Список платежей:</h5>
+                    <a href="{% url 'new_payment' travel.pk %}" class="btn btn-outline-success">Добавить оплату</a>
+                    {#                    <ul class="list-group list-group-flush">#}
+                    {% for payment in payments_list %}
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col">
+                                        <h4 class="card-title">{{ payment.title }}</h4>
+                                        <p class="text-muted">{{ payment.dt_created }}</p>
+                                    </div>
+                                    <div class="col">
+                                        <p class="h3">{{ payment.value|floatformat:2 }}</p>
 
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col">
+                                        {% if payment.debitors %}<p class="card-text">Делится
+                                            между: <b>{{ payment.debitors }}</b></p>{% endif %}
+                                    </div>
+                                    <div class="col">
+                                        <p class="card-text">Оплатил: <b>{{ payment.name }}</b></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {#                            <li class="list-group-item">{{ payment.title }} - {{ payment.value|floatformat:2 }}.#}
+                        {#                                Оплатил {{ payment.name }}. {% if payment.debitors %}Делится#}
+                        {#                                    между {{ payment.debitors }}{% endif %}</li>#}
+                    {% endfor %}
+                    {#                    </ul>#}
+
+                </div>
+            </div>
+        </div>
     </div>
 {% endblock %}

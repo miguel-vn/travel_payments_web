@@ -45,13 +45,14 @@ class TravelDetail(BaseOperations, DetailView):
         context = super().get_context_data(**kwargs)
         travel_object = kwargs.get('object')
         query = '''
-            select pa.id, concat(pr.first_name, ' ', pr.last_name) as name, pa.title as title, pa.value as value, group_concat(concat(pr2.first_name, ' ',  pr2.last_name) separator ', ') as debitors 
+            select pa.id, concat(pr.first_name, ' ', pr.last_name) as name, pa.title as title, pa.value as value, pa.dt_created as dt_created, group_concat(concat(pr2.first_name, ' ',  pr2.last_name) separator ', ') as debitors 
             from payments_logic_payment pa
             inner join auth_user pr on pr.id = pa.payer_id
             left join payments_logic_debt d on d.source_id = pa.id
             left join auth_user pr2 on pr2.id = d.debitor_id
             where pa.travel_id = %s
-            group by pa.id, pr.first_name, pr.last_name''' % travel_object.id
+            group by pa.id, pr.first_name, pr.last_name 
+            order by pa.dt_created desc''' % travel_object.id
 
         with connection.cursor() as cur:
             cur.execute(query)
@@ -64,6 +65,12 @@ class AddPayment(BaseOperations, CreateView):
     template_name = 'payments/new_payment.html'
     form_class = PaymentForm
     success_url = reverse_lazy('travel_detail')
+
+    def get_context_data(self, **kwargs):
+        context = super(AddPayment, self).get_context_data(**kwargs)
+        context['travel_id'] = self.kwargs.get('travel_pk')
+
+        return context
 
     def get_form_kwargs(self, *args, **kwargs):
         form_kwargs = super(AddPayment, self).get_form_kwargs()

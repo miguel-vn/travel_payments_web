@@ -4,6 +4,8 @@ from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 
+from django.utils import timezone
+
 
 class Friendship(models.Model):
     creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name='friendship_creator')
@@ -43,6 +45,7 @@ class Payment(models.Model):
 
     payer = models.ForeignKey(User, on_delete=models.CASCADE)
     travel = models.ForeignKey(Travel, on_delete=models.CASCADE)
+    dt_created = models.DateTimeField(null=False, default=timezone.now, editable=True)
 
     def __str__(self):
         return f'{self.title} - {self.value}'

@@ -32,9 +32,12 @@ class TravelForm(forms.ModelForm):
         labels = {'start_date': 'Дата старта',
                   'end_date': 'Дата окончания',
                   'title': 'Что за поездка?'}
-        widgets = {'start_date': forms.DateInput(attrs={'type': 'date'}),
-                   'end_date': forms.DateInput(attrs={'type': 'date'}),
-                   'title': forms.TextInput(attrs={'placeholder': 'Title of your travel'})}
+        widgets = {'start_date': forms.DateInput(attrs={'type': 'date',
+                                                        'class': 'form-control'}),
+                   'end_date': forms.DateInput(attrs={'type': 'date',
+                                                      'class': 'form-control'}),
+                   'title': forms.TextInput(attrs={'placeholder': 'Title of your travel',
+                                                   'class': 'form-control'})}
 
     def __init__(self, **kwargs):
         current_user = kwargs.pop('current_user')
@@ -63,17 +66,27 @@ class PaymentForm(forms.ModelForm):
         travel_id = kwargs.pop('travel_id')
         super(PaymentForm, self).__init__(**kwargs)
         travelers = Travel.objects.get(pk=travel_id).travelers.all()
-        self.fields['payer'] = UserChoiseField(travelers, label='Кто платит?', widget=forms.RadioSelect())
+        self.fields['payer'] = UserChoiseField(travelers,
+                                               label='Кто платит?',
+                                               widget=forms.RadioSelect(
+                                                   attrs={'class': 'form-check-input'}
+                                               ))
         self.fields['debitors'] = UserMultipleChoiseField(travelers,
                                                           label='На кого разделить счет?',
-                                                          widget=forms.CheckboxSelectMultiple(),
+                                                          widget=forms.CheckboxSelectMultiple(
+                                                              attrs={'class': 'form-check-input'}
+                                                          ),
                                                           required=False)
 
     class Meta:
         model = Payment
-        fields = ('title', 'value')
+        fields = ('title', 'value', 'dt_created')
 
-        widgets = {'title': forms.TextInput(), }  # attrs={'placeholder': 'Title of payment'}),
+        widgets = {'title': forms.TextInput(attrs={'class': 'form-control'}),
+                   'value': forms.NumberInput(attrs={'class': 'form-control'}),
+                   'dt_created': forms.DateTimeInput(
+                       attrs={'class': 'form-control'})}  # attrs={'placeholder': 'Title of payment'}),
 
         labels = {'title': 'Что оплатили?',
-                  'value': 'Сколько?', }
+                  'value': 'Сколько?',
+                  'dt_created': 'Когда?'}

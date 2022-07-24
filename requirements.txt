@@ -1,3 +1,5 @@
-django==3.2.6
+django==3.2.13
+django-mysql==4.6.0
+mysqlclient==2.1.0
 social-auth-app-django==5.0.0
 python-dotenv==0.19.2

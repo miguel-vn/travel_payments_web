@@ -33,7 +33,7 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 DEBUG = bool(int(os.getenv('DEBUG')))
 SECURE_SSL_REDIRECT = not DEBUG
 
-ALLOWED_HOSTS = [] if DEBUG else ['travelpayments.ru', 'www.travelpayments.ru']
+ALLOWED_HOSTS = ['*'] if DEBUG else ['travelpayments.ru', 'www.travelpayments.ru']
 
 # Application definition
 
@@ -45,7 +45,6 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'payments_logic.apps.PaymentsLogicConfig',
-    'news_blog.apps.NewsBlogConfig',
     'social_django'
 ]
 
@@ -72,8 +71,7 @@ TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': [BASE_DIR / 'templates',
-                 BASE_DIR / 'payments_logic' / 'templates',
-                 BASE_DIR / 'news_blog' / 'templates'],
+                 BASE_DIR / 'payments_logic' / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -93,24 +91,16 @@ WSGI_APPLICATION = 'travel_payments_web.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
-if DEBUG:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
-    }
-else:
-    DATABASES = {
+DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.mysql',
             'NAME': os.getenv('DB_NAME'),
             'USER': os.getenv('DB_USERNAME'),
             'PASSWORD': os.getenv('DB_PASSWORD'),
-            'HOST': 'localhost',
+            'HOST': os.getenv('DB_HOST'),
+            'PORT': os.getenv('DB_PORT'),
             'OPTIONS': {'init_command': "SET sql_mode='STRICT_TRANS_TABLES'"}},
     }
-
 # Password validation
 # https://docs.djangoproject.com/en/3.2/ref/settings/#auth-password-validators
 
